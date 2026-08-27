@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangeRentalStatusRequest;
 use App\Http\Requests\StoreRentalRequest;
 use App\Http\Requests\UpdateRentalRequest;
 use App\Http\Resources\RentalResource;
@@ -72,6 +73,22 @@ class RentalController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rezervacija uspešno ažurirana.',
+            'data' => new RentalResource($rental->load(['user', 'car']))
+        ], 200);
+    }
+
+    public function changeStatus(ChangeRentalStatusRequest $request, $id)
+    {
+        $rental = Rental::find($id);
+        if (!$rental) {
+            return response()->json(['success' => false, 'message' => 'Rezervacija nije pronađena.'], 404);
+        }
+
+        $rental->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status rezervacije uspešno izmenjen.',
             'data' => new RentalResource($rental->load(['user', 'car']))
         ], 200);
     }
