@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreLocationRequest;
 use App\Http\Resources\LocationResource;
 use App\Models\Location;
 use Illuminate\Http\Request;
@@ -15,19 +16,9 @@ class LocationController extends Controller
         return LocationResource::collection(Location::all());
     }
 
-    public function store(Request $request)
+    public function store(StoreLocationRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $location = Location::create($request->all());
+        $location = Location::create($request->validated());
 
         return response()->json([
             'success' => true,

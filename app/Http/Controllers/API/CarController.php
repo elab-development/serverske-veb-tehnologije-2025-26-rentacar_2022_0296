@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCarRequest;
 use App\Http\Resources\CarResource;
 use App\Models\Car;
 use Illuminate\Http\Request;
@@ -49,22 +50,9 @@ class CarController extends Controller
         return CarResource::collection($cars);
     }
 
-    public function store(Request $request)
+    public function store(StoreCarRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'brand' => 'required|string|max:255',
-            'model' => 'required|string|max:255',
-            'year' => 'required|integer',
-            'price_per_day' => 'required|numeric',
-            'location_id' => 'required|exists:locations,id',
-            'license_plate' => 'nullable|string|unique:cars',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $car = Car::create($request->all());
+        $car = Car::create($request->validated());
 
         return response()->json([
             'success' => true,
