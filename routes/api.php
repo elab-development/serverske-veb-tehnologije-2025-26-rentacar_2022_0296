@@ -6,6 +6,7 @@ use App\Http\Controllers\API\LocationController;
 use App\Http\Controllers\API\CarController;
 use App\Http\Controllers\API\RentalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\StatsController;
 
 // Javne rute (Dostupne svima / Guest)
 Route::post('/register', [AuthController::class, 'register']);
@@ -36,5 +37,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/cars/{id}', [CarController::class, 'update']);
         Route::delete('/cars/{id}', [CarController::class, 'destroy']);
         Route::post('/cars/{id}/upload-image', [CarController::class, 'uploadImage']);
+
+        Route::get('/stats/dashboard', [StatsController::class, 'getDashboardStats']);
+        Route::get('/stats/export-rentals', [StatsController::class, 'exportRentalsCsv']);
     });
 });
