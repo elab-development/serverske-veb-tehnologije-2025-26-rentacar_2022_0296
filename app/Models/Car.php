@@ -16,6 +16,7 @@ class Car extends Model
         'price_per_day',
         'is_available',
         'license_plate',
+        'image',
         'location_id',
     ];
 

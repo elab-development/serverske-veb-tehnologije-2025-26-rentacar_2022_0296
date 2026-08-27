@@ -35,5 +35,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/cars', [CarController::class, 'store']);
         Route::put('/cars/{id}', [CarController::class, 'update']);
         Route::delete('/cars/{id}', [CarController::class, 'destroy']);
+        Route::post('/cars/{id}/upload-image', [CarController::class, 'uploadImage']);
     });
 });

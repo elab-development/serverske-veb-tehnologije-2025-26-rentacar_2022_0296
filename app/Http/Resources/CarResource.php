@@ -17,6 +17,7 @@ class CarResource extends JsonResource
             'license_plate' => $this->license_plate,
             'price_per_day' => (float) $this->price_per_day,
             'is_available' => (bool) $this->is_available,
+            'image_url' => $this->image ? asset('storage/' . $this->image) : null,
             'location' => new LocationResource($this->whenLoaded('location')),
         ];
     }

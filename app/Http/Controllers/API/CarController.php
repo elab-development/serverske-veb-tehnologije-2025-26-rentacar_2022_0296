@@ -7,6 +7,7 @@ use App\Http\Resources\CarResource;
 use App\Models\Car;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class CarController extends Controller
 {
@@ -107,5 +108,32 @@ class CarController extends Controller
         $car->delete();
 
         return response()->json(['success' => true, 'message' => 'Vozilo uspešno obrisano.'], 200);
+    }
+
+    public function uploadImage(Request $request, $id)
+    {
+        $car = Car::find($id);
+        if (!$car) {
+            return response()->json(['success' => false, 'message' => 'Vozilo nije pronađeno.'], 404);
+        }
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        // Obrisati staru sliku ako postoji
+        if ($car->image && Storage::disk('public')->exists($car->image)) {
+            Storage::disk('public')->delete($car->image);
+        }
+
+        $path = $request->file('image')->store('cars', 'public');
+        $car->image = $path;
+        $car->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Slika vozila uspešno otpremljena.',
+            'data' => new CarResource($car)
+        ], 200);
     }
 }
