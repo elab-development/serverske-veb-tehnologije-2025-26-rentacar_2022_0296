@@ -10,9 +10,33 @@ use Illuminate\Support\Facades\Validator;
 
 class RentalController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return RentalResource::collection(Rental::with(['user', 'car'])->get());
+        $query = Rental::with(['user', 'car']);
+
+        // Filtriranje po statusu
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // Filtriranje po korisniku
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        // Sortiranje po datumu kreiranja ili ceni
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
+
+        if (in_array($sortBy, ['start_date', 'end_date', 'total_price', 'created_at'])) {
+            $query->orderBy($sortBy, strtolower($sortOrder) === 'asc' ? 'asc' : 'desc');
+        }
+
+        // Paginacija
+        $perPage = $request->input('per_page', 10);
+        $rentals = $query->paginate($perPage);
+
+        return RentalResource::collection($rentals);
     }
 
     public function store(Request $request)

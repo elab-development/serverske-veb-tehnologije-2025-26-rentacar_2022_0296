@@ -10,9 +10,42 @@ use Illuminate\Support\Facades\Validator;
 
 class CarController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return CarResource::collection(Car::with('location')->get());
+        $query = Car::with('location');
+
+        // Pretraga po brendu ili modelu
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('brand', 'like', "%{$search}%")
+                    ->orWhere('model', 'like', "%{$search}%");
+            });
+        }
+
+        // Filtriranje po dostupnosti
+        if ($request->has('is_available')) {
+            $query->where('is_available', filter_var($request->input('is_available'), FILTER_VALIDATE_BOOLEAN));
+        }
+
+        // Filtriranje po lokaciji
+        if ($request->has('location_id')) {
+            $query->where('location_id', $request->input('location_id'));
+        }
+
+        // Sortiranje (podrazumevano po id-u uzlazno)
+        $sortBy = $request->input('sort_by', 'id');
+        $sortOrder = $request->input('sort_order', 'asc');
+
+        if (in_array($sortBy, ['brand', 'model', 'year', 'price_per_day', 'id'])) {
+            $query->orderBy($sortBy, strtolower($sortOrder) === 'desc' ? 'desc' : 'asc');
+        }
+
+        // Paginacija (podrazumevano 10 po strani)
+        $perPage = $request->input('per_page', 10);
+        $cars = $query->paginate($perPage);
+
+        return CarResource::collection($cars);
     }
 
     public function store(Request $request)
