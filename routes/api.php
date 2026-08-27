@@ -1,19 +1,39 @@
 <?php
 
+use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\PasswordResetController;
 use App\Http\Controllers\API\LocationController;
 use App\Http\Controllers\API\CarController;
 use App\Http\Controllers\API\RentalController;
-use App\Http\Controllers\API\PasswordResetController;
-use App\Http\Controllers\API\AuthController;
 use Illuminate\Support\Facades\Route;
 
+// Javne rute (Dostupne svima / Guest)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout']);
 
-Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
-Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+Route::get('/cars', [CarController::class, 'index']);
+Route::get('/cars/{id}', [CarController::class, 'show']);
+Route::get('/locations', [LocationController::class, 'index']);
+Route::get('/locations/{id}', [LocationController::class, 'show']);
 
-Route::apiResource('locations', LocationController::class);
-Route::apiResource('cars', CarController::class);
-Route::apiResource('rentals', RentalController::class);
+// Rute za prijavljene korisnike (Admin i Client)
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Klijenti i Admini mogu da kreiraju i gledaju svoje rezervacije
+    Route::apiResource('rentals', RentalController::class);
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+
+    // Samo ADMIN ima pristup upravljanju vozilima i lokacijama (store, update, destroy)
+    Route::middleware(['role:admin'])->group(function () {
+        Route::post('/locations', [LocationController::class, 'store']);
+        Route::put('/locations/{id}', [LocationController::class, 'update']);
+        Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
+
+        Route::post('/cars', [CarController::class, 'store']);
+        Route::put('/cars/{id}', [CarController::class, 'update']);
+        Route::delete('/cars/{id}', [CarController::class, 'destroy']);
+    });
+});
