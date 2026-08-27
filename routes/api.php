@@ -1,16 +1,18 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\API\PasswordResetController;
-use App\Http\Controllers\API\LocationController;
 use App\Http\Controllers\API\CarController;
+use App\Http\Controllers\API\LocationController;
+use App\Http\Controllers\API\PasswordResetController;
 use App\Http\Controllers\API\RentalController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\StatsController;
+use Illuminate\Support\Facades\Route;
 
 // Javne rute (Dostupne svima / Guest)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
 Route::get('/cars', [CarController::class, 'index']);
 Route::get('/cars/{id}', [CarController::class, 'show']);
@@ -20,14 +22,14 @@ Route::get('/locations/{id}', [LocationController::class, 'show']);
 // Rute za prijavljene korisnike (Admin i Client)
 Route::middleware(['auth'])->group(function () {
 
+    Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Klijenti i Admini mogu da kreiraju i gledaju svoje rezervacije
+    // Rezervacije i promena statusa
     Route::apiResource('rentals', RentalController::class);
-    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
-    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
+    Route::patch('/rentals/{id}/status', [RentalController::class, 'changeStatus']);
 
-    // Samo ADMIN ima pristup upravljanju vozilima i lokacijama (store, update, destroy)
+    // Samo ADMIN ima pristup upravljanju vozilima, lokacijama i statistici
     Route::middleware(['role:admin'])->group(function () {
         Route::post('/locations', [LocationController::class, 'store']);
         Route::put('/locations/{id}', [LocationController::class, 'update']);
