@@ -18,7 +18,7 @@ Route::get('/locations', [LocationController::class, 'index']);
 Route::get('/locations/{id}', [LocationController::class, 'show']);
 
 // Rute za prijavljene korisnike (Admin i Client)
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 

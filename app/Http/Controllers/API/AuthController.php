@@ -9,12 +9,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-
     public function register(RegisterRequest $request)
     {
         $validated = $request->validated();
@@ -26,9 +23,13 @@ class AuthController extends Controller
             'role' => $validated['role'] ?? 'client',
         ]);
 
+        // Automatska prijava korisnika u sesiju nakon registracije
+        Auth::login($user);
+        $request->session()->regenerate();
+
         return response()->json([
             'success' => true,
-            'message' => 'Korisnik uspešno registrovan.',
+            'message' => 'Korisnik uspešno registrovan i prijavljen u sesiju.',
             'user' => $user
         ], 201);
     }
@@ -44,31 +45,35 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = User::where('email', $credentials['email'])->firstOrFail();
-
-        $token = Str::random(60);
-        $user->remember_token = $token;
-        $user->save();
+        // Regenerisanje ID-a sesije nakon uspešne prijave
+        $request->session()->regenerate();
 
         return response()->json([
             'success' => true,
-            'message' => 'Uspešna prijava.',
-            'token' => $token,
-            'user' => $user
+            'message' => 'Uspešna prijava u sesiju.',
+            'user' => Auth::user()
         ], 200);
     }
 
     public function logout(Request $request)
     {
-        $user = Auth::user();
-        if ($user) {
-            $user->remember_token = null;
-            $user->save();
-        }
+        Auth::guard('web')->logout();
+
+        // Poništavanje sesije i osvežavanje CSRF tokena
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
             'success' => true,
-            'message' => 'Uspešna odjava.'
+            'message' => 'Uspešna odjava iz sesije.'
+        ], 200);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'user' => Auth::user()
         ], 200);
     }
 }

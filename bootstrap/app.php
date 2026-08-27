@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(path: __DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
         ]);
+        $middleware->statefulApi();
     })
     ->withExceptions(using: function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, $request) {
