@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRentalRequest;
+use App\Http\Requests\UpdateRentalRequest;
 use App\Http\Resources\RentalResource;
 use App\Models\Rental;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class RentalController extends Controller
 {
@@ -33,27 +34,15 @@ class RentalController extends Controller
         }
 
         // Paginacija
-        $perPage = $request->input('per_page', 10);
+        $perPage = (int) $request->input('per_page', 10);
         $rentals = $query->paginate($perPage);
 
         return RentalResource::collection($rentals);
     }
 
-    public function store(Request $request)
+    public function store(StoreRentalRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'car_id' => 'required|exists:cars,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'total_price' => 'required|numeric',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $rental = Rental::create($request->all());
+        $rental = Rental::create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -71,14 +60,14 @@ class RentalController extends Controller
         return new RentalResource($rental);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateRentalRequest $request, $id)
     {
         $rental = Rental::find($id);
         if (!$rental) {
             return response()->json(['success' => false, 'message' => 'Rezervacija nije pronađena.'], 404);
         }
 
-        $rental->update($request->all());
+        $rental->update($request->validated());
 
         return response()->json([
             'success' => true,
