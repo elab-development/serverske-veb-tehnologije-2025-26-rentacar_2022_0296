@@ -7,8 +7,11 @@ use App\Http\Requests\ChangeRentalStatusRequest;
 use App\Http\Requests\StoreRentalRequest;
 use App\Http\Requests\UpdateRentalRequest;
 use App\Http\Resources\RentalResource;
+use App\Models\Car;
 use App\Models\Rental;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RentalController extends Controller
 {
@@ -43,13 +46,36 @@ class RentalController extends Controller
 
     public function store(StoreRentalRequest $request)
     {
-        $rental = Rental::create($request->validated());
+        try {
+            $rental = DB::transaction(function () use ($request) {
+                $validated = $request->validated();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Rezervacija uspešno kreirana.',
-            'data' => new RentalResource($rental->load(['user', 'car']))
-        ], 201);
+                $car = Car::lockForUpdate()->find($validated['car_id']);
+
+                if (!$car || !$car->is_available) {
+                    throw new Exception('Vozilo trenutno nije dostupno za rezervaciju.');
+                }
+
+                $rental = Rental::create($validated);
+
+                $car->update(['is_available' => false]);
+
+                return $rental;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rezervacija uspešno kreirana.',
+                'data' => new RentalResource($rental->load(['user', 'car']))
+            ], 201);
+
+        } catch (Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     public function show($id)
@@ -84,7 +110,17 @@ class RentalController extends Controller
             return response()->json(['success' => false, 'message' => 'Rezervacija nije pronađena.'], 404);
         }
 
-        $rental->update($request->validated());
+        DB::transaction(function () use ($rental, $request) {
+            $validated = $request->validated();
+            $newStatus = $validated['status'];
+
+            $rental->update(['status' => $newStatus]);
+
+            // Ako se rezervacija otkaže ili završi, oslobađamo vozilo
+            if (in_array($newStatus, [Rental::STATUS_CANCELLED, Rental::STATUS_COMPLETED])) {
+                Car::where('id', $rental->car_id)->update(['is_available' => true]);
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -100,7 +136,10 @@ class RentalController extends Controller
             return response()->json(['success' => false, 'message' => 'Rezervacija nije pronađena.'], 404);
         }
 
-        $rental->delete();
+        DB::transaction(function () use ($rental) {
+            Car::where('id', $rental->car_id)->update(['is_available' => true]);
+            $rental->delete();
+        });
 
         return response()->json(['success' => true, 'message' => 'Rezervacija uspešno obrisana.'], 200);
     }
